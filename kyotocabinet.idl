@@ -1,6 +1,6 @@
 /*************************************************************************************************
  * IDL for bindings of scripting languages
- *                                                               Copyright (C) 2009-2011 FAL Labs
+ *                                                               Copyright (C) 2009-2012 FAL Labs
  * This file is part of Kyoto Cabinet.
  * This program is free software: you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, either version
@@ -146,6 +146,7 @@ module kyotocabinet {
     boolean cas(in string key, in string oval, in string nval);
     boolean remove(in string key);
     string get(in string key);
+    long check(in string key);
     string seize(in string key);
     long long set_bulk(in Map recs);
     long long remove_bulk(in List keys);
@@ -253,6 +254,7 @@ module kyotocabinet {
   interface PolyDB :DB {
     List match_prefix(in string prefix, in long long max);
     List match_regex(in string regex, in long long max);
+    List match_similar(in string origin, in long long range, in boolean utf, in long long max);
   };
 };
 

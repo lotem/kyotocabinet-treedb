@@ -1,6 +1,6 @@
 /*************************************************************************************************
  * Database interface
- *                                                               Copyright (C) 2009-2011 FAL Labs
+ *                                                               Copyright (C) 2009-2012 FAL Labs
  * This file is part of Kyoto Cabinet.
  * This program is free software: you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, either version
@@ -434,6 +434,18 @@ class DB {
    * @return the size of the value, or -1 on failure.
    */
   virtual int32_t get(const char* kbuf, size_t ksiz, char* vbuf, size_t max) = 0;
+  /**
+   * Check the existence of a record.
+   * @param kbuf the pointer to the key region.
+   * @param ksiz the size of the key region.
+   * @return the size of the value, or -1 on failure.
+   */
+  virtual int32_t check(const char* kbuf, size_t ksiz) = 0;
+  /**
+   * Check the existence of a record.
+   * @note Equal to the original DB::check method except that the parameter is std::string.
+   */
+  virtual int32_t check(const std::string& key) = 0;
   /**
    * Remove all records.
    * @return true on success, or false on failure.
@@ -1998,6 +2010,43 @@ class BasicDB : public DB {
       return -1;
     }
     return vsiz;
+  }
+  /**
+   * Check the existence of a record.
+   * @param kbuf the pointer to the key region.
+   * @param ksiz the size of the key region.
+   * @return the size of the value, or -1 on failure.
+   */
+  int32_t check(const char* kbuf, size_t ksiz) {
+    class VisitorImpl : public Visitor {
+     public:
+      explicit VisitorImpl() : vsiz_(-1) {}
+      int32_t vsiz() {
+        return vsiz_;
+      }
+     private:
+      const char* visit_full(const char* kbuf, size_t ksiz,
+                             const char* vbuf, size_t vsiz, size_t* sp) {
+        vsiz_ = vsiz;
+        return NOP;
+      }
+      size_t vsiz_;
+    };
+    VisitorImpl visitor;
+    if (!accept(kbuf, ksiz, &visitor, false)) return -1;
+    int32_t vsiz = visitor.vsiz();
+    if (vsiz < 0) {
+      set_error(_KCCODELINE_, Error::NOREC, "no record");
+      return -1;
+    }
+    return vsiz;
+  }
+  /**
+   * Check the existence of a record.
+   * @note Equal to the original DB::check method except that the parameter is std::string.
+   */
+  int32_t check(const std::string& key) {
+    return check(key.data(), key.size());
   }
   /**
    * Retrieve the value of a record and remove it atomically.

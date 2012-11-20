@@ -1,6 +1,6 @@
 /*************************************************************************************************
  * Filesystem abstraction
- *                                                               Copyright (C) 2009-2011 FAL Labs
+ *                                                               Copyright (C) 2009-2012 FAL Labs
  * This file is part of Kyoto Cabinet.
  * This program is free software: you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, either version
@@ -307,6 +307,7 @@ bool File::open(const std::string& path, uint32_t mode, int64_t msiz) {
   }
   if (!(mode & ONOLOCK)) {
     ::DWORD lmode = mode & OWRITER ? LOCKFILE_EXCLUSIVE_LOCK : 0;
+    if (mode & OTRYLOCK) lmode |= LOCKFILE_FAIL_IMMEDIATELY;
     OVERLAPPED ol;
     ol.Offset = INT32MAX;
     ol.OffsetHigh = 0;

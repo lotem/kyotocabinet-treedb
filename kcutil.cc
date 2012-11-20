@@ -1,6 +1,6 @@
 /*************************************************************************************************
  * Utility functions
- *                                                               Copyright (C) 2009-2011 FAL Labs
+ *                                                               Copyright (C) 2009-2012 FAL Labs
  * This file is part of Kyoto Cabinet.
  * This program is free software: you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, either version
@@ -79,6 +79,79 @@ const char* const FEATURES = ""
     "(lzma)"
 #endif
     ;
+
+
+// get the levenshtein distance of two arrays
+template<class CHARTYPE, class CNTTYPE>
+static size_t levdist(const CHARTYPE* abuf, size_t asiz, const CHARTYPE* bbuf, size_t bsiz) {
+  size_t dsiz = bsiz + 1;
+  size_t tsiz = (asiz + 1) * dsiz;
+  CNTTYPE tblstack[2048/sizeof(CNTTYPE)];
+  CNTTYPE* tbl = tsiz > sizeof(tblstack) / sizeof(*tblstack) ? new CNTTYPE[tsiz] : tblstack;
+  tbl[0] = 0;
+  for (size_t i = 1; i <= asiz; i++) {
+    tbl[i*dsiz] = i;
+  }
+  for (size_t i = 1; i <= bsiz; i++) {
+    tbl[i] = i;
+  }
+  abuf--;
+  bbuf--;
+  for (size_t i = 1; i <= asiz; i++) {
+    for (size_t j = 1; j <= bsiz; j++) {
+      uint32_t ac = tbl[(i-1)*dsiz+j] + 1;
+      uint32_t bc = tbl[i*dsiz+j-1] + 1;
+      uint32_t cc = tbl[(i-1)*dsiz+j-1] + (abuf[i] != bbuf[j]);
+      ac = ac < bc ? ac : bc;
+      tbl[i*dsiz+j] = ac < cc ? ac : cc;
+    }
+  }
+  size_t ed = tbl[asiz*dsiz+bsiz];
+  if (tbl != tblstack) delete[] tbl;
+  return ed;
+}
+
+
+/**
+ * Calculate the levenshtein distance of two regions in bytes.
+ */
+size_t memdist(const void* abuf, size_t asiz, const void* bbuf, size_t bsiz) {
+  _assert_(abuf && asiz <= MEMMAXSIZ && bbuf && bsiz <= MEMMAXSIZ);
+  return asiz > UINT8MAX || bsiz > UINT8MAX ?
+    levdist<const char, uint32_t>((const char*)abuf, asiz, (const char*)bbuf, bsiz) :
+    levdist<const char, uint8_t>((const char*)abuf, asiz, (const char*)bbuf, bsiz);
+}
+
+
+/**
+ * Calculate the levenshtein distance of two UTF-8 strings.
+ */
+size_t strutfdist(const char* astr, const char* bstr) {
+  _assert_(astr && bstr);
+  size_t anum = strutflen(astr);
+  uint32_t astack[128];
+  uint32_t* aary = anum > sizeof(astack) / sizeof(*astack) ? new uint32_t[anum] : astack;
+  strutftoucs(astr, aary, &anum);
+  size_t bnum = strutflen(bstr);
+  uint32_t bstack[128];
+  uint32_t* bary = bnum > sizeof(bstack) / sizeof(*bstack) ? new uint32_t[bnum] : bstack;
+  strutftoucs(bstr, bary, &bnum);
+  size_t dist = strucsdist(aary, anum, bary, bnum);
+  if (bary != bstack) delete[] bary;
+  if (aary != astack) delete[] aary;
+  return dist;
+}
+
+
+/**
+ * Calculate the levenshtein distance of two UCS-4 arrays.
+ */
+size_t strucsdist(const uint32_t* aary, size_t anum, const uint32_t* bary, size_t bnum) {
+  _assert_(aary && anum <= MEMMAXSIZ && bary && bnum <= MEMMAXSIZ);
+  return anum > UINT8MAX || bnum > UINT8MAX ?
+    levdist<const uint32_t, uint32_t>(aary, anum, bary, bnum) :
+    levdist<const uint32_t, uint8_t>(aary, anum, bary, bnum);
+}
 
 
 /**

@@ -7,11 +7,11 @@
 #================================================================
 
 # Package name
-AC_INIT(kyotocabinet, 1.2.70)
+AC_INIT(kyotocabinet, 1.2.76)
 
 # Package information
-MYLIBVER=15
-MYLIBREV=9
+MYLIBVER=16
+MYLIBREV=13
 MYFORMATVER=5
 
 # Targets
@@ -223,6 +223,16 @@ then
   else
     printf 'no\n'
   fi
+fi
+printf 'checking for useless warnings... '
+if printf 'main() {}' | $CC -xc \
+  -Wno-unused-but-set-variable -Wno-unused-but-set-parameter -o config.tmp - >config.tmp 2>&1
+then
+  MYCFLAGS="$MYCFLAGS -Wno-unused-but-set-variable -Wno-unused-but-set-parameter"
+  MYCXXFLAGS="$MYCXXFLAGS -Wno-unused-but-set-variable -Wno-unused-but-set-parameter"
+  printf 'yes\n'
+else
+  printf 'no\n'
 fi
 
 # Atomic operations

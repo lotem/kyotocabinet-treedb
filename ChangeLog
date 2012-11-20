@@ -1,3 +1,49 @@
+2012-05-24  FAL Labs  <info@fallabs.com>
+
+	* kcthread.cc (CondVar::wait): a bug on Win32 was fixed.
+
+	* kcdbext.h (IndexDB::set, IndexDB::replace): a bug of updating existing records was fixed.
+
+	* kcdb.h (DB::check): new function.
+
+	- Release: 1.2.76
+
+2012-03-28  FAL Labs  <info@fallabs.com>
+
+	* kcpolydb.h (PolyDB::match_similar): supressed warnings on signedness.
+
+	- Release: 1.2.75
+
+2012-03-15  FAL Labs  <info@fallabs.com>
+
+	* kcpolydb.h (PolyDB::SimilarKey): the type of a member was modified for c++0x mode.
+
+	- Release: 1.2.74
+
+2012-03-06  FAL Labs  <info@fallabs.com>
+
+	* kcutil.h (memdist, strutfdist, strucsdist): new functions.
+
+	* kcpolydb.h (PolyDB::match_similar): new funcion.
+
+	* kclangc.h (kclevdist, kcdbmatchsimilar): new functions.
+
+	* kcfile.cc (File::open): LOCKFILE_FAIL_IMMEDIATELY support was added for Win32.
+
+	- Release: 1.2.73
+
+2011-12-15  FAL Labs  <info@fallabs.com>
+
+	* kcfile.h (File::read, File::read_rast): a bug of invalid memory deletion was fixed.
+
+	- Release: 1.2.72
+
+2011-12-01  FAL Labs  <info@fallabs.com>
+
+	* kclang.cc (kcdbcas): the erroneous order of parameters was rectified.
+
+	- Release: 1.2.71
+
 2011-08-01  FAL Labs  <info@fallabs.com>
 
 	* kcplantdb.h (PlantDB::jump, PlantDB::step): a bug related to direction switch was fixed.

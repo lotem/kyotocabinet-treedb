@@ -1,6 +1,6 @@
 /*************************************************************************************************
  * Utility functions
- *                                                               Copyright (C) 2009-2011 FAL Labs
+ *                                                               Copyright (C) 2009-2012 FAL Labs
  * This file is part of Kyoto Cabinet.
  * This program is free software: you can redistribute it and/or modify it under the terms of
  * the GNU General Public License as published by the Free Software Foundation, either version
@@ -643,6 +643,17 @@ void* memimem(const void* hbuf, size_t hsiz, const void* nbuf, size_t nsiz);
 
 
 /**
+ * Calculate the levenshtein distance of two regions in bytes.
+ * @param abuf the pointer to the region of one buffer.
+ * @param asiz the size of the region of one buffer.
+ * @param bbuf the pointer to the region of the other buffer.
+ * @param bsiz the size of the region of the other buffer.
+ * @return the levenshtein distance of two regions.
+ */
+size_t memdist(const void* abuf, size_t asiz, const void* bbuf, size_t bsiz);
+
+
+/**
  * Duplicate a string on memory.
  * @param str the source string.
  * @note Because the region of the return value is allocated with the the new[] operator, it
@@ -766,6 +777,17 @@ void strutftoucs(const char* src, uint32_t* dest, size_t* np);
 
 
 /**
+ * Convert a UTF-8 string into a UCS-4 array.
+ * @param src the source object which does not have to be trailed by zero code.
+ * @param slen the length of the source object.
+ * @param dest the destination object.  It must have enough size.
+ * @param np the pointer to the variable into which the number of elements in the destination
+ * object is assgined.
+ */
+void strutftoucs(const char* src, size_t slen, uint32_t* dest, size_t* np);
+
+
+/**
  * Convert a UCS-4 array into a UTF-8 string.
  * @param src the source object.
  * @param snum the number of elements in the source object.
@@ -773,6 +795,26 @@ void strutftoucs(const char* src, uint32_t* dest, size_t* np);
  * @return the size of the result string.
  */
 size_t strucstoutf(const uint32_t* src, size_t snum, char* dest);
+
+
+/**
+ * Calculate the levenshtein distance of two UTF-8 strings.
+ * @param astr one UTF-8 string.
+ * @param bstr the other UTF-8 string.
+ * @return the levenshtein distance of two arrays.
+ */
+size_t strutfdist(const char* astr, const char* bstr);
+
+
+/**
+ * Calculate the levenshtein distance of two UCS-4 arrays.
+ * @param aary one UCS-4 array.
+ * @param anum the number of elements of one array.
+ * @param bary the other UCS-4 array.
+ * @param bnum the number of elements of the other array.
+ * @return the levenshtein distance of two arrays.
+ */
+size_t strucsdist(const uint32_t* aary, size_t anum, const uint32_t* bary, size_t bnum);
 
 
 /**
@@ -2677,6 +2719,58 @@ inline void strutftoucs(const char* src, uint32_t* dest, size_t* np) {
   const unsigned char* rp = (unsigned char*)src;
   size_t dnum = 0;
   while (*rp != '\0') {
+    uint32_t c = *rp;
+    if (c < 0x80) {
+      dest[dnum++] = c;
+    } else if (c < 0xe0) {
+      if (rp[1] != '\0') {
+        c = ((c & 0x1f) << 6) | (rp[1] & 0x3f);
+        if (c >= 0x80) dest[dnum++] = c;
+        rp++;
+      }
+    } else if (c < 0xf0) {
+      if (rp[1] != '\0' && rp[2] != '\0') {
+        c = ((c & 0x0f) << 12) | ((rp[1] & 0x3f) << 6) | (rp[2] & 0x3f);
+        if (c >= 0x800) dest[dnum++] = c;
+        rp += 2;
+      }
+    } else if (c < 0xf8) {
+      if (rp[1] != '\0' && rp[2] != '\0' && rp[3] != '\0') {
+        c = ((c & 0x07) << 18) | ((rp[1] & 0x3f) << 12) | ((rp[2] & 0x3f) << 6) |
+            (rp[3] & 0x3f);
+        if (c >= 0x10000) dest[dnum++] = c;
+        rp += 3;
+      }
+    } else if (c < 0xfc) {
+      if (rp[1] != '\0' && rp[2] != '\0' && rp[3] != '\0' && rp[4] != '\0') {
+        c = ((c & 0x03) << 24) | ((rp[1] & 0x3f) << 18) | ((rp[2] & 0x3f) << 12) |
+            ((rp[3] & 0x3f) << 6) | (rp[4] & 0x3f);
+        if (c >= 0x200000) dest[dnum++] = c;
+        rp += 4;
+      }
+    } else if (c < 0xfe) {
+      if (rp[1] != '\0' && rp[2] != '\0' && rp[3] != '\0' && rp[4] != '\0' && rp[5] != '\0') {
+        c = ((c & 0x01) << 30) | ((rp[1] & 0x3f) << 24) | ((rp[2] & 0x3f) << 18) |
+            ((rp[3] & 0x3f) << 12) | ((rp[4] & 0x3f) << 6) | (rp[5] & 0x3f);
+        if (c >= 0x4000000) dest[dnum++] = c;
+        rp += 5;
+      }
+    }
+    rp++;
+  }
+  *np = dnum;
+}
+
+
+/**
+ * Convert a UTF-8 string into a UCS-4 array.
+ */
+inline void strutftoucs(const char* src, size_t slen, uint32_t* dest, size_t* np) {
+  _assert_(src && slen <= MEMMAXSIZ && dest && np);
+  const unsigned char* rp = (unsigned char*)src;
+  const unsigned char* ep = rp + slen;
+  size_t dnum = 0;
+  while (rp < ep) {
     uint32_t c = *rp;
     if (c < 0x80) {
       dest[dnum++] = c;
